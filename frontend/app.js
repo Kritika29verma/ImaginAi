@@ -10,6 +10,9 @@ const enhancedPromptContainer = document.getElementById('enhanced-prompt-contain
 const enhancedPromptDisplay = document.getElementById('enhanced-prompt-display');
 const approveBtn = document.getElementById('approve-btn');
 const editBtn = document.getElementById('edit-btn');
+const editPanel = document.getElementById('edit-panel');
+const editTextarea = document.getElementById('edit-textarea');
+const addEditBtn = document.getElementById('add-edit-btn');
 const generateImageBtn = document.getElementById('generate-image-btn');
 const generatedImageContainer = document.getElementById('generated-image-container');
 const generatedImage = document.getElementById('generated-image');
@@ -131,13 +134,55 @@ function approvePrompt() {
     enhancedPromptContainer.style.borderColor = '#22c55e';
 }
 
-// Edit Prompt (copy to input)
+// Edit Prompt - show edit panel
 function editPrompt() {
-    promptInput.value = currentEnhancedPrompt;
-    enhancedPromptContainer.classList.add('hidden');
-    generateImageBtn.disabled = true;
+    editTextarea.value = '';
+    editPanel.classList.remove('hidden');
+    enhancedPromptContainer.style.borderColor = '';
     approvedPrompt = '';
-    setStatus('Edit your prompt', 'ready');
+    generateImageBtn.disabled = true;
+    setStatus('Add your instructions', 'ready');
+    editTextarea.focus();
+}
+
+// Add edit instructions and re-enhance
+async function addEditToPrompt() {
+    const instructions = editTextarea.value.trim();
+    if (!instructions) {
+        showError('Please enter instructions');
+        return;
+    }
+
+    try {
+        showLoading('Re-enhancing prompt...');
+        setStatus('Enhancing...', 'processing');
+
+        const combinedPrompt = `${currentEnhancedPrompt}. Additional instructions: ${instructions}`;
+
+        const response = await fetch(`${API_BASE_URL}/api/enhance-and-analyze`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'enhance', textPrompt: combinedPrompt })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to re-enhance prompt');
+        }
+
+        currentEnhancedPrompt = data.result;
+        enhancedPromptDisplay.textContent = currentEnhancedPrompt;
+        editPanel.classList.add('hidden');
+        editTextarea.value = '';
+
+        setStatus('Prompt updated! Approve to generate.', 'ready');
+    } catch (error) {
+        console.error('Edit error:', error);
+        showError('Error: ' + error.message);
+    } finally {
+        hideLoading();
+    }
 }
 
 // Generate Image
@@ -307,6 +352,7 @@ function downloadVariation() {
 enhanceBtn.addEventListener('click', enhancePrompt);
 approveBtn.addEventListener('click', approvePrompt);
 editBtn.addEventListener('click', editPrompt);
+addEditBtn.addEventListener('click', addEditToPrompt);
 generateImageBtn.addEventListener('click', generateImage);
 downloadImageBtn.addEventListener('click', downloadGeneratedImage);
 imageUpload.addEventListener('change', handleFileUpload);
