@@ -27,7 +27,7 @@ app.use(
 app.use(express.json({ limit: '50mb' }));
 
 // Serve frontend files
-app.use(express.static(path.join(__dirname, '..', 'public')));
+app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
 // --- MODEL CONSTANTS ---
 const MULTIMODAL_MODEL = "gemini-2.5-flash";
